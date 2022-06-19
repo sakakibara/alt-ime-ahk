@@ -11,6 +11,11 @@
 ; Razer Synapseなど、キーカスタマイズ系のツールを併用しているときのエラー対策
 #MaxHotkeysPerInterval 350
 
+; 既存のインスタンスが存在する場合、終了して新たにインスタンスを開始
+#SingleInstance Force
+
+SetTitleMatchMode, RegEx
+
 ; 主要なキーを HotKey に設定し、何もせずパススルーする
 *~a::
 *~b::
@@ -108,13 +113,42 @@
     Return
 
 ; 上部メニューがアクティブになるのを抑制
-*~LAlt::Send {Blind}{vk07}
-*~RAlt::Send {Blind}{vk07}
+; 200ms 以内にもう一度押下した場合はアクティブにする
+*~LAlt::
+if ( A_PriorHotKey == "LAlt up" and 200 > A_TimeSincePriorHotkey )
+{
+    Send {Blind}{Alt}
+} else {
+    if !WinActive("ahk_class ConsoleWindowClass") {
+        Send {Blind}{vkFF}
+    }
+    if WinActive("ahk_class HwndWrapper.+") {
+        Send {Control}
+    }
+}
+Return
+
+*~RAlt::
+if ( A_PriorHotKey == "RAlt up" and 200 > A_TimeSincePriorHotkey )
+{
+    Send {Alt}
+} else {
+    if !WinActive("ahk_class ConsoleWindowClass") {
+        Send {Blind}{vkFF}
+    }
+    if WinActive("ahk_class HwndWrapper.+") {
+        Send {Control}
+    }
+}
+Return
 
 ; 左 Alt 空打ちで IME を OFF
 LAlt up::
     if (A_PriorHotkey == "*~LAlt")
     {
+        if IME_GetConverting() >= 1 {
+            Return
+        }
         IME_SET(0)
     }
     Return
